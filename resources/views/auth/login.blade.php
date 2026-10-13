@@ -158,5 +158,15 @@
         </form>
 
     </div>
+
+    <script>
+        window.addEventListener('load', function () {
+            window.scrollTo(0, 0);
+        });
+
+        window.addEventListener('pageshow', function () {
+            window.scrollTo(0, 0);
+        });
+    </script>
 </body>
 </html>

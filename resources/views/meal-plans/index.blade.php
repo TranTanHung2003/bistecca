@@ -163,6 +163,15 @@
     </div>
 </main>
 <script>
+    history.scrollRestoration = 'manual';
+
+    const resetScrollToTop = () => {
+        window.scrollTo(0, 0);
+    };
+
+    window.addEventListener('load', resetScrollToTop);
+    window.addEventListener('pageshow', resetScrollToTop);
+
     const pdfInput = document.getElementById('report');
     const fileName = document.getElementById('file-name');
     const uploadButton = document.getElementById('upload-button');
