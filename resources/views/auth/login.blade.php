@@ -157,11 +157,6 @@
             <button type="submit">Đăng nhập</button>
         </form>
 
-        <div class="demo">
-            <strong>Tài khoản demo:</strong><br>
-            Email: test@example.com<br>
-            Mật khẩu: password
-        </div>
     </div>
 </body>
 </html>
