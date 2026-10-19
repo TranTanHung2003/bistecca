@@ -19,6 +19,8 @@ class MealPlanController extends Controller
 
     public function store(Request $request, MealPlanPdfImporter $importer)
     {
+        abort_unless($request->user()->isFo(), 403);
+
         $request->validate(['report' => ['required', 'file', 'mimes:xml,pdf', 'max:20480']]);
 
         try {

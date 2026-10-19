@@ -34,4 +34,27 @@ class StaffAuthTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->get('/meal-plans')->assertOk();
     }
+
+    public function test_fb_can_check_in_but_cannot_import_meal_plans(): void
+    {
+        $fb = User::factory()->create(['role' => 'fb']);
+
+        $this->actingAs($fb)
+            ->get('/meal-plans')
+            ->assertOk()
+            ->assertDontSee('Nhập XML');
+
+        $this->post('/meal-plans')
+            ->assertForbidden();
+    }
+
+    public function test_fo_can_see_meal_plan_import_form(): void
+    {
+        $fo = User::factory()->create(['role' => 'fo']);
+
+        $this->actingAs($fo)
+            ->get('/meal-plans')
+            ->assertOk()
+            ->assertSee('Nhập XML');
+    }
 }

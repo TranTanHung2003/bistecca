@@ -100,10 +100,12 @@
 <body>
 <main>
     <header>
-        <div><h1>Meal plan</h1><p>Nhập danh sách khách từ file XML xuất từ PMS.</p></div>
+        <div><h1>Meal plan</h1>@if(auth()->user()->isFo())<p>Nhập danh sách khách từ file XML xuất từ PMS.</p>@endif</div>
+        @if(auth()->user()->isFo())
         <div class="panel upload-panel"><form method="POST" action="{{ route('meal-plans.store') }}" enctype="multipart/form-data">
             @csrf <input id="report" type="file" name="report" accept=".xml,.pdf,application/xml,application/pdf" required><span id="file-name">Chưa chọn file</span><button id="upload-button" type="submit" disabled>Nhập XML</button>
         </form></div>
+        @endif
         <div class="panel" style="padding: 12px 16px; min-width: 220px;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                 <div>
@@ -176,11 +178,13 @@
     const fileName = document.getElementById('file-name');
     const uploadButton = document.getElementById('upload-button');
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-    pdfInput.addEventListener('change', () => {
-        const file = pdfInput.files[0];
-        fileName.textContent = file ? file.name : 'Chưa chọn file';
-        uploadButton.disabled = !file;
-    });
+    if (pdfInput) {
+        pdfInput.addEventListener('change', () => {
+            const file = pdfInput.files[0];
+            fileName.textContent = file ? file.name : 'Chưa chọn file';
+            uploadButton.disabled = !file;
+        });
+    }
 
     const floorFilters = document.querySelectorAll('[data-floor-filter]');
     const roomCards = document.querySelectorAll('[data-room-card]');
