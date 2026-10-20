@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->role === 'fo';
     }
 
+    public function canManuallyAddMealPlanGuest(): bool
+    {
+        return $this->role === 'fo';
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

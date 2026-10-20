@@ -30,7 +30,32 @@ class MealPlanController extends Controller
         }
 
         return redirect()->route('meal-plans.index', ['date' => $result['report_date']])
-            ->with('success', "Đã nhập {$result['rows']} khách cho ngày " . $result['report_date'] . '.');
+            ->with('success', "Đã nhập {$result['rows']} khách cho ngày ".$result['report_date'].'.');
+    }
+
+    public function storeManual(Request $request)
+    {
+        abort_unless($request->user()->canManuallyAddMealPlanGuest(), 403);
+
+        $data = $request->validate([
+            'report_date' => ['required', 'date'],
+            'room' => ['required', 'string', 'max:20'],
+            'guest_name' => ['required', 'string', 'max:255'],
+            'nationality' => ['required', 'string', 'max:255'],
+        ]);
+
+        MealPlanGuest::create([
+            ...$data,
+            'room_type' => 'Manual',
+            'guest_count' => 1,
+            'arrival' => $data['report_date'],
+            'departure' => $data['report_date'],
+            'meal_plan' => 'Breakfast Include',
+            'source_line' => 'Manual entry',
+        ]);
+
+        return redirect()->route('meal-plans.index', ['date' => $data['report_date']])
+            ->with('success', 'Đã thêm khách vào danh sách buffet.');
     }
 
     public function checkIn(Request $request, MealPlanGuest $guest)

@@ -22,6 +22,19 @@
         button:disabled { cursor: not-allowed; opacity: .45; }
         #file-name { color: #68756d; font-size: .9rem; overflow-wrap: anywhere; }
         .toolbar { margin-bottom: 18px; } .toolbar label { color: #4e5e55; font-weight: 600; }
+        .manual-entry-trigger { margin: 0 0 18px; }
+        .manual-dialog { width: min(520px, calc(100% - 28px)); max-width: none; padding: 0; border: 1px solid #cbd6cc; border-radius: 10px; color: #24332d; background: #fffdf8; box-shadow: 0 24px 80px rgba(20, 42, 30, .28); }
+        .manual-dialog::backdrop { background: rgba(22, 37, 29, .55); backdrop-filter: blur(2px); }
+        .manual-dialog-content { padding: 24px; }
+        .manual-dialog-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+        .manual-dialog h2 { color: #1c4738; font-size: 1.3rem; margin: 0; }
+        .manual-dialog-header p { margin: 5px 0 0; font-size: .9rem; }
+        .manual-dialog-close { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; color: #45564b; background: #edf3ee; border-color: #d5ddd5; font-size: 1.35rem; line-height: 1; }
+        .manual-dialog form { display: grid; gap: 14px; }
+        .manual-dialog label { display: grid; gap: 6px; color: #4e5e55; font-size: .88rem; font-weight: 600; }
+        .manual-dialog input { width: 100%; min-height: 44px; }
+        .manual-dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 6px; }
+        .manual-dialog-cancel { color: #405148; background: #fffdf8; border-color: #b9c5bc; }
         .checkin-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 18px; }
         .checkin-heading h2 { color: #1c4738; font-size: 1.35rem; margin: 0; } .checkin-heading p { margin: 5px 0 0; }
         .floor-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -120,8 +133,27 @@
         </div>
     </header>
     @if(session('success')) <div class="notice">{{ session('success') }}</div> @endif
-    @if($errors->any()) <div class="notice error">{{ $errors->first('report') }}</div> @endif
+    @if($errors->any()) <div class="notice error">{{ $errors->first() }}</div> @endif
     <div class="toolbar"><form method="GET"><label for="date">Ngày báo cáo</label><input id="date" type="date" name="date" value="{{ $date }}"><button type="submit">Xem</button></form></div>
+    @if(auth()->user()->canManuallyAddMealPlanGuest())
+    <button type="button" class="manual-entry-trigger" id="open-manual-entry">+ Thêm khách buffet</button>
+    <dialog class="manual-dialog" id="manual-entry-dialog" aria-labelledby="manual-entry-title">
+        <div class="manual-dialog-content">
+            <div class="manual-dialog-header">
+                <div><h2 id="manual-entry-title">Thêm khách buffet</h2><p>Khách sẽ được thêm vào danh sách ngày đã chọn. FB thực hiện check-in khi khách đến.</p></div>
+                <button type="button" class="manual-dialog-close" id="close-manual-entry" aria-label="Đóng">&times;</button>
+            </div>
+            <form method="POST" action="{{ route('meal-plans.manual-store') }}">
+                @csrf
+                <label for="manual-report-date">Ngày<input id="manual-report-date" type="date" name="report_date" value="{{ old('report_date', $date) }}" required></label>
+                <label for="manual-room">Số phòng<input id="manual-room" type="text" name="room" value="{{ old('room') }}" maxlength="20" required></label>
+                <label for="manual-guest-name">Họ tên<input id="manual-guest-name" type="text" name="guest_name" value="{{ old('guest_name') }}" maxlength="255" required></label>
+                <label for="manual-nationality">Quốc tịch<input id="manual-nationality" type="text" name="nationality" value="{{ old('nationality') }}" maxlength="255" required></label>
+                <div class="manual-dialog-actions"><button type="button" class="manual-dialog-cancel" id="cancel-manual-entry">Hủy</button><button type="submit">Thêm khách</button></div>
+            </form>
+        </div>
+    </dialog>
+    @endif
     <div class="panel">
         @php($noBreakfastGuests = $guests->filter(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
         @php($buffetGuests = $guests->reject(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
@@ -173,6 +205,19 @@
 
     window.addEventListener('load', resetScrollToTop);
     window.addEventListener('pageshow', resetScrollToTop);
+
+    const manualEntryDialog = document.getElementById('manual-entry-dialog');
+    if (manualEntryDialog) {
+        document.getElementById('open-manual-entry').addEventListener('click', () => manualEntryDialog.showModal());
+        document.getElementById('close-manual-entry').addEventListener('click', () => manualEntryDialog.close());
+        document.getElementById('cancel-manual-entry').addEventListener('click', () => manualEntryDialog.close());
+        manualEntryDialog.addEventListener('click', (event) => {
+            if (event.target === manualEntryDialog) manualEntryDialog.close();
+        });
+        @if($errors->hasAny(['report_date', 'room', 'guest_name', 'nationality']))
+        manualEntryDialog.showModal();
+        @endif
+    }
 
     const pdfInput = document.getElementById('report');
     const fileName = document.getElementById('file-name');
