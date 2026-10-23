@@ -77,6 +77,7 @@ class MealPlanCheckInTest extends TestCase
             'room' => '508',
             'guest_name' => 'Nguyen Van An',
             'nationality' => 'Vietnamese',
+            'is_child' => '0',
         ]);
 
         $response->assertRedirect(route('meal-plans.index', ['date' => '2026-10-20']))
@@ -88,6 +89,7 @@ class MealPlanCheckInTest extends TestCase
             'nationality' => 'Vietnamese',
             'room_type' => 'Manual',
             'meal_plan' => 'Breakfast Include',
+            'is_child' => 0,
             'buffet_check_in_status' => null,
         ]);
 
@@ -95,6 +97,7 @@ class MealPlanCheckInTest extends TestCase
         $this->assertSame('2026-10-20', $guest->report_date->toDateString());
         $this->assertSame('2026-10-20', $guest->arrival->toDateString());
         $this->assertSame('2026-10-20', $guest->departure->toDateString());
+        $this->assertFalse($guest->is_child);
         $this->assertNull($guest->buffet_checked_in_at);
         $this->assertNull($guest->buffet_check_in_status);
 
@@ -103,6 +106,22 @@ class MealPlanCheckInTest extends TestCase
             ->assertSee('Nguyen Van An')
             ->assertSee('508')
             ->assertSee('Vietnamese');
+    }
+
+    public function test_manual_guest_can_be_marked_as_a_child(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fo']))
+            ->post(route('meal-plans.manual-store'), [
+                'report_date' => '2026-10-20',
+                'room' => '512',
+                'guest_name' => 'Child Guest',
+                'nationality' => 'Vietnamese',
+                'is_child' => '1',
+            ])
+            ->assertRedirect(route('meal-plans.index', ['date' => '2026-10-20']));
+
+        $guest = MealPlanGuest::where('room', '512')->firstOrFail();
+        $this->assertTrue($guest->is_child);
     }
 
     public function test_manual_guest_can_be_added_when_optional_headcount_columns_are_not_migrated(): void

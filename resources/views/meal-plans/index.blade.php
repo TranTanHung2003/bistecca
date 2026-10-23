@@ -32,7 +32,8 @@
         .manual-dialog-close { flex: 0 0 40px; width: 40px; height: 40px; padding: 0; color: #45564b; background: #edf3ee; border-color: #d5ddd5; font-size: 1.35rem; line-height: 1; }
         .manual-dialog form { display: grid; gap: 14px; }
         .manual-dialog label { display: grid; gap: 6px; color: #4e5e55; font-size: .88rem; font-weight: 600; }
-        .manual-dialog input { width: 100%; min-height: 44px; }
+        .manual-dialog input, .manual-dialog select { width: 100%; min-height: 44px; }
+        .manual-dialog select { padding: 10px 12px; border: 1px solid #b9c5bc; border-radius: 5px; color: inherit; background: #fffdf8; font: inherit; }
         .manual-dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 6px; }
         .manual-dialog-cancel { color: #405148; background: #fffdf8; border-color: #b9c5bc; }
         .checkin-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 18px; }
@@ -156,6 +157,7 @@
                 <label for="manual-room">Số phòng<input id="manual-room" type="text" name="room" value="{{ old('room') }}" maxlength="20" required></label>
                 <label for="manual-guest-name">Họ tên<input id="manual-guest-name" type="text" name="guest_name" value="{{ old('guest_name') }}" maxlength="255" required></label>
                 <label for="manual-nationality">Quốc tịch<input id="manual-nationality" type="text" name="nationality" value="{{ old('nationality') }}" maxlength="255" required></label>
+                <label for="manual-is-child">Đối tượng<select id="manual-is-child" name="is_child"><option value="0" @selected(old('is_child', '0') === '0')>Người lớn</option><option value="1" @selected(old('is_child') === '1')>Trẻ em</option></select></label>
                 <div class="manual-dialog-actions"><button type="button" class="manual-dialog-cancel" id="cancel-manual-entry">Hủy</button><button type="submit">Thêm khách</button></div>
             </form>
         </div>
@@ -170,7 +172,6 @@
         @php($birthdayGuests = $guests->filter(fn ($guest) => $guest->birthday && $guest->birthday->format('m-d') === $birthdayKey))
         @php($checkedInCount = $buffetGuests->whereNotNull('buffet_checked_in_at')->count())
         @php($availableFloors = collect(['1', '2', '3', '4', '5', '6', '8', '9'])->filter(fn ($floor) => $guests->contains(fn ($guest) => str_starts_with((string) $guest->room, $floor))) )
-        <div class="checkin-heading"><div><h2>Check-in buffet</h2><p>{{ $date }}</p></div><span class="room-count">Chạm nút khi khách đã vào buffet</span></div>
         @unless($canCheckIn)<div class="checkin-closed-notice" role="status">Check-in buffet chỉ mở từ 05:00 đến 12:00 (giờ Việt Nam).</div>@endunless
         <div class="floor-filters" aria-label="Lọc theo tầng"><button type="button" class="floor-filter active" data-floor-filter="all">Tất cả</button>@foreach($availableFloors as $floor)<button type="button" class="floor-filter" data-floor-filter="{{ $floor }}">{{ $floor }}</button>@endforeach</div>
         <div class="stats">

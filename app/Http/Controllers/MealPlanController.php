@@ -43,12 +43,14 @@ class MealPlanController extends Controller
             'room' => ['required', 'string', 'max:20'],
             'guest_name' => ['required', 'string', 'max:255'],
             'nationality' => ['required', 'string', 'max:255'],
+            'is_child' => ['sometimes', 'boolean'],
         ]);
 
         MealPlanGuest::create([
             ...$data,
             'room_type' => 'Manual',
             'guest_count' => 1,
+            'is_child' => (bool) ($data['is_child'] ?? false),
             'arrival' => $data['report_date'],
             'departure' => $data['report_date'],
             'meal_plan' => 'Breakfast Include',
