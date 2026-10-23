@@ -192,15 +192,40 @@ class MealPlanCheckInTest extends TestCase
             'report_date' => '2026-10-20',
             'room' => '101',
             'room_type' => 'STD',
-            'guest_count' => 3,
-            'adult_count' => 2,
-            'child_count' => 1,
+            'guest_count' => 9,
+            'adult_count' => 9,
+            'child_count' => 5,
             'guest_name' => 'Buffet Guest',
             'arrival' => '2026-10-20',
             'departure' => '2026-10-21',
             'meal_plan' => 'Breakfast Include',
             'buffet_checked_in_at' => now(),
             'buffet_check_in_status' => 'checked_in',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => '2026-10-20',
+            'room' => '101',
+            'room_type' => 'STD',
+            'guest_count' => 8,
+            'adult_count' => 8,
+            'child_count' => 4,
+            'guest_name' => 'Second Buffet Guest',
+            'arrival' => '2026-10-20',
+            'departure' => '2026-10-21',
+            'meal_plan' => 'Breakfast Include',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => '2026-10-20',
+            'room' => '101',
+            'room_type' => 'STD',
+            'guest_count' => 7,
+            'adult_count' => 0,
+            'child_count' => 7,
+            'guest_name' => 'Child Guest',
+            'arrival' => '2026-10-20',
+            'departure' => '2026-10-21',
+            'meal_plan' => 'Breakfast Include',
+            'is_child' => true,
         ]);
         MealPlanGuest::create([
             'report_date' => '2026-10-20',
@@ -217,11 +242,11 @@ class MealPlanCheckInTest extends TestCase
 
         $this->get(route('meal-plans.index', ['date' => '2026-10-20']))
             ->assertOk()
-            ->assertSee('data-stat="total-guests">2', false)
+            ->assertSee('data-stat="total-guests">4', false)
             ->assertSee('data-stat="no-breakfast">1', false)
             ->assertSee('data-stat="pax">2', false)
             ->assertSee('data-stat="child">1', false)
             ->assertSee('id="checked-in-count">1', false)
-            ->assertSee('id="remaining-count">0', false);
+            ->assertSee('id="remaining-count">2', false);
     }
 }

@@ -163,8 +163,8 @@
     <div class="panel">
         @php($noBreakfastGuests = $guests->filter(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
         @php($buffetGuests = $guests->reject(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
-        @php($adultPax = $buffetGuests->sum(fn ($guest) => $guest->adult_count ?? ($guest->is_child ? 0 : ($guest->guest_count ?? 1))))
-        @php($childCount = $buffetGuests->sum(fn ($guest) => $guest->child_count ?? ($guest->is_child ? ($guest->guest_count ?? 1) : 0)))
+        @php($adultPax = $buffetGuests->reject(fn ($guest) => $guest->is_child)->count())
+        @php($childCount = $buffetGuests->filter(fn ($guest) => $guest->is_child)->count())
         @php($birthdayKey = substr($date, 5))
         @php($birthdayGuests = $guests->filter(fn ($guest) => $guest->birthday && $guest->birthday->format('m-d') === $birthdayKey))
         @php($checkedInCount = $buffetGuests->whereNotNull('buffet_checked_in_at')->count())
