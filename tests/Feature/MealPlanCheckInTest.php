@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\MealPlanGuest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MealPlanCheckInTest extends TestCase
@@ -13,6 +15,7 @@ class MealPlanCheckInTest extends TestCase
 
     public function test_guest_can_be_checked_in_for_buffet(): void
     {
+        $this->travelTo(Carbon::parse('2026-10-23 08:00:00', 'Asia/Ho_Chi_Minh'));
         $this->actingAs(User::factory()->create(['role' => 'fb']));
 
         $guest = MealPlanGuest::create([
@@ -30,6 +33,39 @@ class MealPlanCheckInTest extends TestCase
         $response->assertOk()->assertJson(['checked_in' => true]);
         $this->assertNotNull($guest->fresh()->buffet_checked_in_at);
         $this->assertSame('checked_in', $guest->fresh()->buffet_check_in_status);
+    }
+
+    public function test_buffet_check_in_is_limited_to_five_am_through_noon_vietnam_time(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fb']));
+
+        foreach ([
+            '2026-10-23 04:59:59' => false,
+            '2026-10-23 05:00:00' => true,
+            '2026-10-23 12:00:00' => true,
+            '2026-10-23 12:00:01' => false,
+        ] as $time => $allowed) {
+            $this->travelTo(Carbon::parse($time, 'Asia/Ho_Chi_Minh'));
+            $guest = MealPlanGuest::create([
+                'report_date' => '2026-10-23',
+                'room' => substr(str_replace(['-', ' ', ':'], '', $time), -4),
+                'room_type' => 'STD',
+                'guest_name' => 'Guest '.$time,
+                'arrival' => '2026-10-23',
+                'departure' => '2026-10-24',
+                'meal_plan' => 'Breakfast Include',
+            ]);
+
+            $response = $this->postJson(route('meal-plans.check-in', $guest));
+
+            if ($allowed) {
+                $response->assertOk();
+                $this->assertNotNull($guest->fresh()->buffet_checked_in_at);
+            } else {
+                $response->assertForbidden();
+                $this->assertNull($guest->fresh()->buffet_checked_in_at);
+            }
+        }
     }
 
     public function test_staff_can_manually_add_a_late_buffet_guest(): void
@@ -67,6 +103,29 @@ class MealPlanCheckInTest extends TestCase
             ->assertSee('Nguyen Van An')
             ->assertSee('508')
             ->assertSee('Vietnamese');
+    }
+
+    public function test_manual_guest_can_be_added_when_optional_headcount_columns_are_not_migrated(): void
+    {
+        Schema::table('meal_plan_guests', function ($table): void {
+            $table->dropColumn(['adult_count', 'child_count']);
+        });
+
+        $this->actingAs(User::factory()->create(['role' => 'fo']))
+            ->post(route('meal-plans.manual-store'), [
+                'report_date' => '2026-10-20',
+                'room' => '511',
+                'guest_name' => 'Manual Guest',
+                'nationality' => 'Vietnamese',
+            ])
+            ->assertRedirect(route('meal-plans.index', ['date' => '2026-10-20']))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('meal_plan_guests', [
+            'room' => '511',
+            'guest_name' => 'Manual Guest',
+            'guest_count' => 1,
+        ]);
     }
 
     public function test_it_cannot_manually_add_a_late_buffet_guest(): void
@@ -129,6 +188,7 @@ class MealPlanCheckInTest extends TestCase
 
     public function test_no_breakfast_can_be_recorded_as_a_check_in_status(): void
     {
+        $this->travelTo(Carbon::parse('2026-10-23 08:00:00', 'Asia/Ho_Chi_Minh'));
         $this->actingAs(User::factory()->create());
 
         $guest = MealPlanGuest::create([

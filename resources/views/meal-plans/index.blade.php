@@ -37,6 +37,7 @@
         .manual-dialog-cancel { color: #405148; background: #fffdf8; border-color: #b9c5bc; }
         .checkin-heading { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 18px; }
         .checkin-heading h2 { color: #1c4738; font-size: 1.35rem; margin: 0; } .checkin-heading p { margin: 5px 0 0; }
+        .checkin-closed-notice { padding: 10px 13px; margin: 0 0 14px; border: 1px solid #e5c47e; border-radius: 6px; color: #68430e; background: #fff5d9; font-size: .88rem; }
         .floor-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
         .floor-filter { min-width: 48px; padding: 10px 13px; background: #fffdf8; color: #246044; border-color: #b9cdbd; }
         .floor-filter.active, .floor-filter:hover { background: #246044; color: #fff; border-color: #246044; }
@@ -170,6 +171,7 @@
         @php($checkedInCount = $buffetGuests->whereNotNull('buffet_checked_in_at')->count())
         @php($availableFloors = collect(['1', '2', '3', '4', '5', '6', '8', '9'])->filter(fn ($floor) => $guests->contains(fn ($guest) => str_starts_with((string) $guest->room, $floor))) )
         <div class="checkin-heading"><div><h2>Check-in buffet</h2><p>{{ $date }}</p></div><span class="room-count">Chạm nút khi khách đã vào buffet</span></div>
+        @unless($canCheckIn)<div class="checkin-closed-notice" role="status">Check-in buffet chỉ mở từ 05:00 đến 12:00 (giờ Việt Nam).</div>@endunless
         <div class="floor-filters" aria-label="Lọc theo tầng"><button type="button" class="floor-filter active" data-floor-filter="all">Tất cả</button>@foreach($availableFloors as $floor)<button type="button" class="floor-filter" data-floor-filter="{{ $floor }}">{{ $floor }}</button>@endforeach</div>
         <div class="stats">
             <div class="stat"><strong data-stat="total-guests">{{ $guests->count() }}</strong><span>Tổng khách</span></div>
@@ -202,7 +204,7 @@
                         @if($isNoBreakfast)
                         <span class="no-breakfast-badge">No breakfast</span>
                         @else
-                        <button type="button" class="checkin-button {{ $isCheckedIn ? 'checked' : '' }}" data-check-in-url="{{ route('meal-plans.check-in', $guest) }}" data-check-in-status="checked_in" {{ $isCheckedIn ? 'disabled' : '' }}>{{ $isCheckedIn ? 'Đã check-in' : 'Check-in' }}</button>
+                        <button type="button" class="checkin-button {{ $isCheckedIn ? 'checked' : '' }}" data-check-in-url="{{ route('meal-plans.check-in', $guest) }}" data-check-in-status="checked_in" {{ $isCheckedIn || !$canCheckIn ? 'disabled' : '' }}>{{ $isCheckedIn ? 'Đã check-in' : ($canCheckIn ? 'Check-in' : 'Ngoài giờ') }}</button>
                         @endif
                     </div>
                     @endforeach

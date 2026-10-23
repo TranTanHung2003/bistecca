@@ -13,8 +13,9 @@ class MealPlanController extends Controller
     {
         $date = $request->date('date')?->toDateString() ?? now()->toDateString();
         $guests = MealPlanGuest::whereDate('report_date', $date)->orderBy('room')->orderBy('id')->get();
+        $canCheckIn = $this->isWithinCheckInHours();
 
-        return view('meal-plans.index', compact('date', 'guests'));
+        return view('meal-plans.index', compact('date', 'guests', 'canCheckIn'));
     }
 
     public function store(Request $request, MealPlanPdfImporter $importer)
@@ -48,8 +49,6 @@ class MealPlanController extends Controller
             ...$data,
             'room_type' => 'Manual',
             'guest_count' => 1,
-            'adult_count' => 1,
-            'child_count' => 0,
             'arrival' => $data['report_date'],
             'departure' => $data['report_date'],
             'meal_plan' => 'Breakfast Include',
@@ -62,6 +61,8 @@ class MealPlanController extends Controller
 
     public function checkIn(Request $request, MealPlanGuest $guest)
     {
+        abort_unless($this->isWithinCheckInHours(), 403, 'Check-in buffet chỉ mở từ 05:00 đến trước 12:00.');
+
         $status = $request->validate([
             'status' => ['nullable', 'string', 'in:checked_in,no_breakfast'],
         ])['status'] ?? 'checked_in';
@@ -76,5 +77,12 @@ class MealPlanController extends Controller
             'status' => $status,
             'checked_in_at' => $guest->buffet_checked_in_at?->format('H:i'),
         ]);
+    }
+
+    private function isWithinCheckInHours(): bool
+    {
+        $time = now('Asia/Ho_Chi_Minh')->format('H:i:s');
+
+        return $time >= '05:00:00' && $time <= '12:00:00';
     }
 }
