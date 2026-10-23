@@ -24,8 +24,9 @@ class MealPlanPdfImporterTest extends TestCase
         <FormattedReportObject FieldName="{rptBrefast.RoomCode}"><FormattedValue>314</FormattedValue></FormattedReportObject>
         <FormattedReportObject FieldName="{rptBrefast.ArrivalTime}"><FormattedValue>22/09/2026</FormattedValue></FormattedReportObject>
         <FormattedReportObject FieldName="{rptBrefast.DepartureTime}"><FormattedValue>25/09/2026</FormattedValue></FormattedReportObject>
-        <FormattedReportObject FieldName="{rptBrefast.NumAdult}"><FormattedValue>1</FormattedValue></FormattedReportObject>
-        <FormattedReportObject FieldName="{rptBrefast.NumChild}"><FormattedValue>0</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.NumAdult}"><FormattedValue>2</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.NumChild}"><FormattedValue>1</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.NumGuest}"><FormattedValue>3</FormattedValue></FormattedReportObject>
         <FormattedReportObject FieldName="{rptBrefast.RoomTypeCode}"><FormattedValue>DTC</FormattedValue></FormattedReportObject>
         <FormattedReportObject FieldName="{rptBrefast.Night}"><FormattedValue>3</FormattedValue></FormattedReportObject>
         <FormattedReportObject FieldName="{rptBrefast.QTich}"><FormattedValue>Viet Nam</FormattedValue></FormattedReportObject>
@@ -44,6 +45,8 @@ XML);
         $this->assertSame(1, $result['rows']);
         $this->assertSame('Lê Huỳnh Kim Ngân', MealPlanGuest::firstOrFail()->guest_name);
         $this->assertSame('1988-04-29', MealPlanGuest::firstOrFail()->birthday->toDateString());
+        $this->assertSame(2, MealPlanGuest::firstOrFail()->adult_count);
+        $this->assertSame(1, MealPlanGuest::firstOrFail()->child_count);
     }
 
     public function test_it_parses_guest_rows_and_repairs_vietnamese_names(): void
@@ -63,6 +66,8 @@ PDF;
         $this->assertSame('Kiều Võ Kim Ngân', $rows[1]['guest_name']);
         $this->assertSame('Korea Republic of', $rows[0]['nationality']);
         $this->assertSame(1, $rows[0]['nights']);
+        $this->assertSame(1, $rows[0]['adult_count']);
+        $this->assertSame(0, $rows[0]['child_count']);
         $this->assertSame('JIRARATANATHAM SUTHAM', $rows[2]['guest_name']);
         $this->assertSame('TAN TZY LING', $rows[3]['guest_name']);
     }

@@ -40,10 +40,15 @@
         .floor-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
         .floor-filter { min-width: 48px; padding: 10px 13px; background: #fffdf8; color: #246044; border-color: #b9cdbd; }
         .floor-filter.active, .floor-filter:hover { background: #246044; color: #fff; border-color: #246044; }
-        .stats { display: grid; grid-template-columns: repeat(5, minmax(100px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
         .stat { background: #f2f6f2; border: 1px solid #dce6dd; border-radius: 7px; padding: 13px 15px; }
         .stat strong { display: block; color: #1c4738; font-size: 1.55rem; line-height: 1; } .stat span { display: block; color: #68756d; font-size: .82rem; margin-top: 5px; }
         .stat.no-breakfast-stat { background: #fbf1e6; border-color: #ead4ba; } .stat.no-breakfast-stat strong { color: #8a501e; }
+        .stat.included-stat { background: #f2f6f2; }
+        .included-stat > span { margin: 0 0 10px; font-weight: 600; }
+        .included-breakdown { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .included-breakdown strong { font-size: 1.2rem; }
+        .included-breakdown span { font-size: .7rem; line-height: 1.2; }
         .room-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
         .room-card { border: 1px solid #d5ddd5; border-radius: 8px; overflow: hidden; background: #fffdf8; }
         .room-card.checked-room { border-color: #9ec4aa; } .room-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #edf3ee; border-bottom: 1px solid #d5ddd5; }
@@ -79,7 +84,7 @@
             .toolbar input { flex: 1 1 auto; min-width: 0; }
             .toolbar button { width: auto; flex: 0 0 auto; }
             .checkin-heading { flex-direction: column; align-items: flex-start; }
-            .stats { grid-template-columns: repeat(5, minmax(76px, 1fr)); gap: 8px; }
+            .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
             .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         }
         @media (max-width: 480px) {
@@ -93,7 +98,8 @@
             .checkin-heading h2 { font-size: 1.2rem; }
             .floor-filters { gap: 6px; }
             .floor-filter { flex: 1 1 calc(33.333% - 6px); min-width: 0; }
-            .stats { grid-template-columns: repeat(2, minmax(90px, 1fr)); }
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .included-stat { grid-column: span 2; }
             .stat { padding: 11px 9px; }
             .stat strong { font-size: 1.2rem; }
             .stat span { font-size: .72rem; }
@@ -157,13 +163,25 @@
     <div class="panel">
         @php($noBreakfastGuests = $guests->filter(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
         @php($buffetGuests = $guests->reject(fn ($guest) => strtolower(trim((string) $guest->meal_plan)) === 'no breakfast'))
+        @php($adultPax = $buffetGuests->sum(fn ($guest) => $guest->adult_count ?? ($guest->is_child ? 0 : ($guest->guest_count ?? 1))))
+        @php($childCount = $buffetGuests->sum(fn ($guest) => $guest->child_count ?? ($guest->is_child ? ($guest->guest_count ?? 1) : 0)))
         @php($birthdayKey = substr($date, 5))
         @php($birthdayGuests = $guests->filter(fn ($guest) => $guest->birthday && $guest->birthday->format('m-d') === $birthdayKey))
         @php($checkedInCount = $buffetGuests->whereNotNull('buffet_checked_in_at')->count())
         @php($availableFloors = collect(['1', '2', '3', '4', '5', '6', '8', '9'])->filter(fn ($floor) => $guests->contains(fn ($guest) => str_starts_with((string) $guest->room, $floor))) )
         <div class="checkin-heading"><div><h2>Check-in buffet</h2><p>{{ $date }}</p></div><span class="room-count">Chạm nút khi khách đã vào buffet</span></div>
         <div class="floor-filters" aria-label="Lọc theo tầng"><button type="button" class="floor-filter active" data-floor-filter="all">Tất cả</button>@foreach($availableFloors as $floor)<button type="button" class="floor-filter" data-floor-filter="{{ $floor }}">{{ $floor }}</button>@endforeach</div>
-        <div class="stats"><div class="stat"><strong>{{ $guests->count() }}</strong><span>Tổng khách</span></div><div class="stat"><strong id="checked-in-count">{{ $checkedInCount }}</strong><span>Đã check-in buffet</span></div><div class="stat no-breakfast-stat"><strong>{{ $noBreakfastGuests->count() }}</strong><span>No breakfast</span></div><div class="stat"><strong id="remaining-count">{{ $buffetGuests->count() - $checkedInCount }}</strong><span>Còn lại buffet</span></div><div class="stat birthday-stat"><strong>{{ $birthdayGuests->count() }}</strong><span>Sinh nhật hôm nay</span></div></div>
+        <div class="stats">
+            <div class="stat"><strong data-stat="total-guests">{{ $guests->count() }}</strong><span>Tổng khách</span></div>
+            <div class="stat included-stat"><span>Bao gồm</span><div class="included-breakdown">
+                <div><strong data-stat="no-breakfast">{{ $noBreakfastGuests->count() }}</strong><span>No breakfast</span></div>
+                <div><strong data-stat="pax">{{ $adultPax }}</strong><span>Pax</span></div>
+                <div><strong data-stat="child">{{ $childCount }}</strong><span>Child</span></div>
+            </div></div>
+            <div class="stat"><strong id="checked-in-count">{{ $checkedInCount }}</strong><span>Đã check-in buffet</span></div>
+            <div class="stat"><strong id="remaining-count">{{ $buffetGuests->count() - $checkedInCount }}</strong><span>Còn lại buffet</span></div>
+            <div class="stat birthday-stat"><strong>{{ $birthdayGuests->count() }}</strong><span>Sinh nhật hôm nay</span></div>
+        </div>
         @if($birthdayGuests->isNotEmpty())
         <div class="birthday-notice" role="status"><strong>Sinh nhật hôm nay:</strong> @foreach($birthdayGuests as $birthdayGuest)<a class="birthday-link" href="#guest-{{ $birthdayGuest->id }}">{{ $birthdayGuest->guest_name }} · Phòng {{ $birthdayGuest->room }} · {{ $birthdayGuest->birthday->format('d/m/Y') }}</a>@if(!$loop->last), @endif @endforeach</div>
         @endif

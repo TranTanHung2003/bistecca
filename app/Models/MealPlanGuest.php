@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MealPlanGuest extends Model
 {
     protected $fillable = [
-        'report_date', 'room', 'room_type', 'guest_count', 'guest_name', 'birthday',
+        'report_date', 'room', 'room_type', 'guest_count', 'adult_count', 'child_count', 'guest_name', 'birthday',
         'arrival', 'departure', 'nights', 'travel_agent', 'rate_code',
         'nationality', 'meal_plan', 'breakfast_code', 'is_child', 'source_line', 'buffet_checked_in_at', 'buffet_check_in_status',
     ];

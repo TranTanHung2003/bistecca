@@ -183,4 +183,45 @@ class MealPlanCheckInTest extends TestCase
             ->assertSee('data-birthday="true"', false)
             ->assertDontSee('data-birthday="true" data-guest-row="2"', false);
     }
+
+    public function test_dashboard_shows_total_no_breakfast_pax_child_and_check_in_counts_in_order(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fb']));
+
+        MealPlanGuest::create([
+            'report_date' => '2026-10-20',
+            'room' => '101',
+            'room_type' => 'STD',
+            'guest_count' => 3,
+            'adult_count' => 2,
+            'child_count' => 1,
+            'guest_name' => 'Buffet Guest',
+            'arrival' => '2026-10-20',
+            'departure' => '2026-10-21',
+            'meal_plan' => 'Breakfast Include',
+            'buffet_checked_in_at' => now(),
+            'buffet_check_in_status' => 'checked_in',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => '2026-10-20',
+            'room' => '102',
+            'room_type' => 'STD',
+            'guest_count' => 1,
+            'adult_count' => 1,
+            'child_count' => 0,
+            'guest_name' => 'No Breakfast Guest',
+            'arrival' => '2026-10-20',
+            'departure' => '2026-10-21',
+            'meal_plan' => 'No breakfast',
+        ]);
+
+        $this->get(route('meal-plans.index', ['date' => '2026-10-20']))
+            ->assertOk()
+            ->assertSee('data-stat="total-guests">2', false)
+            ->assertSee('data-stat="no-breakfast">1', false)
+            ->assertSee('data-stat="pax">2', false)
+            ->assertSee('data-stat="child">1', false)
+            ->assertSee('id="checked-in-count">1', false)
+            ->assertSee('id="remaining-count">0', false);
+    }
 }

@@ -48,6 +48,8 @@ class MealPlanController extends Controller
             ...$data,
             'room_type' => 'Manual',
             'guest_count' => 1,
+            'adult_count' => 1,
+            'child_count' => 0,
             'arrival' => $data['report_date'],
             'departure' => $data['report_date'],
             'meal_plan' => 'Breakfast Include',

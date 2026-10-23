@@ -89,6 +89,8 @@ class MealPlanPdfImporter
                 'room' => $values['roomcode'],
                 'room_type' => $values['roomtypecode'] ?? '',
                 'guest_count' => isset($values['numguest']) && $values['numguest'] !== '' ? (int) $values['numguest'] : null,
+                'adult_count' => isset($values['numadult']) && $values['numadult'] !== '' ? $adult : null,
+                'child_count' => isset($values['numchild']) && $values['numchild'] !== '' ? $child : null,
                 'guest_name' => $this->repairVietnamese($values['name']),
                 'birthday' => $this->xmlOptionalDate($values['birthdate'] ?? ''),
                 'arrival' => $this->xmlDate($values['arrivaltime'] ?? ''),
@@ -225,6 +227,8 @@ class MealPlanPdfImporter
                 'room' => $match[1],
                 'room_type' => $match[2],
                 'guest_count' => $match[3] === '' ? null : (int) $match[3],
+                'adult_count' => (int) $match[11],
+                'child_count' => (int) $match[12],
                 'guest_name' => $this->repairVietnamese($match[4]),
                 'arrival' => Carbon::createFromFormat('d/m/Y', $match[5])->toDateString(),
                 'departure' => Carbon::createFromFormat('d/m/Y', $match[6])->toDateString(),
@@ -234,7 +238,7 @@ class MealPlanPdfImporter
                 'nationality' => $details['nationality'],
                 'meal_plan' => $match[9],
                 'breakfast_code' => $match[10],
-                'is_child' => (bool) ((int) $match[12]),
+                'is_child' => (int) $match[12] > 0 && (int) $match[11] === 0,
                 'source_line' => $line,
             ];
         }
