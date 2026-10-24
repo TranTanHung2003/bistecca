@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Smalot\PdfParser\Parser;
 use RuntimeException;
 use SimpleXMLElement;
@@ -167,9 +168,20 @@ class MealPlanPdfImporter
 
     private function storeRows(string $reportDate, array $rows): array
     {
-        DB::transaction(function () use ($reportDate, $rows): void {
+        $hasAdultCountColumn = Schema::hasColumn('meal_plan_guests', 'adult_count');
+        $hasChildCountColumn = Schema::hasColumn('meal_plan_guests', 'child_count');
+
+        DB::transaction(function () use ($reportDate, $rows, $hasAdultCountColumn, $hasChildCountColumn): void {
             DB::table('meal_plan_guests')->whereDate('report_date', $reportDate)->delete();
-            DB::table('meal_plan_guests')->insert(array_map(function (array $row) use ($reportDate): array {
+            DB::table('meal_plan_guests')->insert(array_map(function (array $row) use ($reportDate, $hasAdultCountColumn, $hasChildCountColumn): array {
+                if (! $hasAdultCountColumn) {
+                    unset($row['adult_count']);
+                }
+
+                if (! $hasChildCountColumn) {
+                    unset($row['child_count']);
+                }
+
                 return $row + ['report_date' => $reportDate, 'created_at' => now(), 'updated_at' => now()];
             }, $rows));
         });

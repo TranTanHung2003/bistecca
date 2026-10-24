@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Services\MealPlanPdfImporter;
 use App\Models\MealPlanGuest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MealPlanPdfImporterTest extends TestCase
@@ -47,6 +48,41 @@ XML);
         $this->assertSame('1988-04-29', MealPlanGuest::firstOrFail()->birthday->toDateString());
         $this->assertSame(2, MealPlanGuest::firstOrFail()->adult_count);
         $this->assertSame(1, MealPlanGuest::firstOrFail()->child_count);
+    }
+
+    public function test_it_imports_xml_when_optional_headcount_columns_are_missing(): void
+    {
+        Schema::table('meal_plan_guests', function ($table): void {
+            $table->dropColumn(['adult_count', 'child_count']);
+        });
+
+        $path = tempnam(sys_get_temp_dir(), 'meal-plan-').'.xml';
+        file_put_contents($path, <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<FormattedReport xmlns="urn:crystal-reports:schemas">
+    <FormattedReportObject><TextValue>MEAL PLAN reports ON 24/10/2026</TextValue></FormattedReportObject>
+    <FormattedAreaPair Level="1" Type="Details"><FormattedReportObjects>
+        <FormattedReportObject FieldName="{@Name}"><FormattedValue>Child Guest</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.RoomCode}"><FormattedValue>202</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.ArrivalTime}"><FormattedValue>23/10/2026</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.DepartureTime}"><FormattedValue>24/10/2026</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.NumAdult}"><FormattedValue>0</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.NumChild}"><FormattedValue>1</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{rptBrefast.RoomTypeCode}"><FormattedValue>SDD</FormattedValue></FormattedReportObject>
+        <FormattedReportObject FieldName="{@Breakfast}"><FormattedValue>Breakfast Include</FormattedValue></FormattedReportObject>
+    </FormattedReportObjects></FormattedAreaPair>
+</FormattedReport>
+XML);
+
+        $result = (new MealPlanPdfImporter())->importXml($path);
+        unlink($path);
+
+        $this->assertSame(1, $result['rows']);
+        $this->assertDatabaseHas('meal_plan_guests', [
+            'room' => '202',
+            'guest_name' => 'Child Guest',
+            'is_child' => 1,
+        ]);
     }
 
     public function test_it_parses_guest_rows_and_repairs_vietnamese_names(): void
