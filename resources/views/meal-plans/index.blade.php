@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meal plan</title>
+    <link rel="icon" type="image/png" href="{{ asset('image/logo.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         :root { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; color: #24332d; background: #eef2ee; }
