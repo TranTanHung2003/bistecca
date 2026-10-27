@@ -173,7 +173,7 @@
         @php($birthdayGuests = $guests->filter(fn ($guest) => $guest->birthday && $guest->birthday->format('m-d') === $birthdayKey))
         @php($checkedInCount = $buffetGuests->whereNotNull('buffet_checked_in_at')->count())
         @php($availableFloors = collect(['1', '2', '3', '4', '5', '6', '8', '9'])->filter(fn ($floor) => $guests->contains(fn ($guest) => str_starts_with((string) $guest->room, $floor))) )
-        @unless($canCheckIn)<div class="checkin-closed-notice" role="status">Check-in buffet chỉ mở từ 05:00 đến 12:00 (giờ Việt Nam).</div>@endunless
+        @if($canCheckInRole && !$canCheckIn)<div class="checkin-closed-notice" role="status">Check-in buffet chỉ mở từ 05:00 đến 12:00 (giờ Việt Nam).</div>@endif
         <div class="floor-filters" aria-label="Lọc theo tầng"><button type="button" class="floor-filter active" data-floor-filter="all">Tất cả</button>@foreach($availableFloors as $floor)<button type="button" class="floor-filter" data-floor-filter="{{ $floor }}">{{ $floor }}</button>@endforeach</div>
         <div class="stats">
             <div class="stat"><strong data-stat="total-guests">{{ $guests->count() }}</strong><span>Tổng khách</span></div>
@@ -205,8 +205,13 @@
                         <div><div class="guest-name">{{ $guest->guest_name }}@if($isBirthday)<span class="birthday-badge">Sinh nhật</span>@endif</div><div class="guest-meta"><span class="guest-nationality">{{ $guest->nationality ?: 'Chưa rõ quốc tịch' }}</span> · {{ $guest->is_child ? 'Trẻ em' : 'Người lớn' }} · {{ $guest->meal_plan ?: 'Không có meal plan' }}@if($isBirthday) · Ngày sinh: {{ $guest->birthday->format('d/m/Y') }}@endif</div></div>
                         @if($isNoBreakfast)
                         <span class="no-breakfast-badge">No breakfast</span>
+                        @elseif($isCheckedIn)
+                        <button type="button" class="checkin-button checked" disabled>Đã check-in</button>
+                        @elseif($canCheckIn)
+                        <button type="button" class="checkin-button" data-check-in-url="{{ route('meal-plans.check-in', $guest) }}" data-check-in-status="checked_in">Check-in</button>
+                        @elseif($canCheckInRole)
+                        <button type="button" class="checkin-button" disabled>Ngoài giờ</button>
                         @else
-                        <button type="button" class="checkin-button {{ $isCheckedIn ? 'checked' : '' }}" data-check-in-url="{{ route('meal-plans.check-in', $guest) }}" data-check-in-status="checked_in" {{ $isCheckedIn || !$canCheckIn ? 'disabled' : '' }}>{{ $isCheckedIn ? 'Đã check-in' : ($canCheckIn ? 'Check-in' : 'Ngoài giờ') }}</button>
                         @endif
                     </div>
                     @endforeach

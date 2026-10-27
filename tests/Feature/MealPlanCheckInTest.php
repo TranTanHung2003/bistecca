@@ -35,6 +35,72 @@ class MealPlanCheckInTest extends TestCase
         $this->assertSame('checked_in', $guest->fresh()->buffet_check_in_status);
     }
 
+    public function test_only_fb_can_submit_buffet_check_in(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 08:00:00', 'Asia/Ho_Chi_Minh'));
+
+        foreach (['fo', 'acc'] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]));
+            $guest = MealPlanGuest::create([
+                'report_date' => '2026-10-23',
+                'room' => $role === 'fo' ? '601' : '602',
+                'room_type' => 'STD',
+                'guest_name' => strtoupper($role).' Guest',
+                'arrival' => '2026-10-23',
+                'departure' => '2026-10-24',
+                'meal_plan' => 'Breakfast Include',
+            ]);
+
+            $this->postJson(route('meal-plans.check-in', $guest))
+                ->assertForbidden();
+            $this->assertNull($guest->fresh()->buffet_checked_in_at);
+        }
+    }
+
+    public function test_fo_and_acc_see_existing_statuses_but_no_pending_check_in_button(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-23 08:00:00', 'Asia/Ho_Chi_Minh'));
+        $date = '2026-10-23';
+        MealPlanGuest::create([
+            'report_date' => $date,
+            'room' => '601',
+            'room_type' => 'STD',
+            'guest_name' => 'Already Checked Guest',
+            'arrival' => $date,
+            'departure' => '2026-10-24',
+            'meal_plan' => 'Breakfast Include',
+            'buffet_checked_in_at' => now(),
+            'buffet_check_in_status' => 'checked_in',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => $date,
+            'room' => '602',
+            'room_type' => 'STD',
+            'guest_name' => 'Pending Guest',
+            'arrival' => $date,
+            'departure' => '2026-10-24',
+            'meal_plan' => 'Breakfast Include',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => $date,
+            'room' => '603',
+            'room_type' => 'STD',
+            'guest_name' => 'No Breakfast Guest',
+            'arrival' => $date,
+            'departure' => '2026-10-24',
+            'meal_plan' => 'No breakfast',
+        ]);
+
+        foreach (['fo', 'acc'] as $role) {
+            $this->actingAs(User::factory()->create(['role' => $role]))
+                ->get(route('meal-plans.index', ['date' => $date]))
+                ->assertOk()
+                ->assertSee('Đã check-in')
+                ->assertSee('No breakfast')
+                ->assertDontSee('data-check-in-url=', false);
+        }
+    }
+
     public function test_buffet_check_in_is_limited_to_five_am_through_noon_vietnam_time(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'fb']));
@@ -242,7 +308,7 @@ class MealPlanCheckInTest extends TestCase
     public function test_no_breakfast_can_be_recorded_as_a_check_in_status(): void
     {
         $this->travelTo(Carbon::parse('2026-10-23 08:00:00', 'Asia/Ho_Chi_Minh'));
-        $this->actingAs(User::factory()->create());
+        $this->actingAs(User::factory()->create(['role' => 'fb']));
 
         $guest = MealPlanGuest::create([
             'report_date' => '2026-09-24',

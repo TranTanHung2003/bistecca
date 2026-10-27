@@ -14,11 +14,12 @@ class MealPlanController extends Controller
     {
         $date = $request->date('date')?->toDateString() ?? now()->toDateString();
         $guests = MealPlanGuest::whereDate('report_date', $date)->orderBy('room')->orderBy('id')->get();
-        $canCheckIn = $this->isWithinCheckInHours();
+        $canCheckInRole = $request->user()->canCheckInBuffet();
+        $canCheckIn = $canCheckInRole && $this->isWithinCheckInHours();
 
         $manualNationalities = MealPlanGuest::MANUAL_NATIONALITIES;
 
-        return view('meal-plans.index', compact('date', 'guests', 'canCheckIn', 'manualNationalities'));
+        return view('meal-plans.index', compact('date', 'guests', 'canCheckIn', 'canCheckInRole', 'manualNationalities'));
     }
 
     public function store(Request $request, MealPlanPdfImporter $importer)
@@ -66,6 +67,7 @@ class MealPlanController extends Controller
 
     public function checkIn(Request $request, MealPlanGuest $guest)
     {
+        abort_unless($request->user()->canCheckInBuffet(), 403);
         abort_unless($this->isWithinCheckInHours(), 403, 'Check-in buffet chỉ mở từ 05:00 đến trước 12:00.');
 
         $status = $request->validate([

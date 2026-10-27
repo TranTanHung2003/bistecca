@@ -30,6 +30,11 @@ class User extends Authenticatable
         return $this->role === 'fo';
     }
 
+    public function canCheckInBuffet(): bool
+    {
+        return $this->role === 'fb';
+    }
+
     public function canManuallyAddMealPlanGuest(): bool
     {
         return $this->role === 'fo';

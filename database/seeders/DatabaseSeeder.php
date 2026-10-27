@@ -43,5 +43,13 @@ class DatabaseSeeder extends Seeder
                 'role' => 'fb',
             ],
         );
+        User::updateOrCreate(
+            ['email' => 'acc@noh.com'],
+            [
+                'name' => 'Accountant',
+                'password' => bcrypt('NOH.dng@25'),
+                'role' => 'acc',
+            ],
+        );
     }
 }

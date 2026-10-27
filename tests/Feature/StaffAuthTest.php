@@ -57,4 +57,22 @@ class StaffAuthTest extends TestCase
             ->assertOk()
             ->assertSee('Nhập XML');
     }
+
+    public function test_accountant_can_view_statistics_but_cannot_upload_or_add_guests(): void
+    {
+        $accountant = User::factory()->create(['role' => 'acc']);
+
+        $this->actingAs($accountant)
+            ->get('/meal-plans')
+            ->assertOk()
+            ->assertSee('Tổng khách')
+            ->assertDontSee('Nhập XML')
+            ->assertDontSee('id="open-manual-entry"', false);
+
+        $this->post('/meal-plans')
+            ->assertForbidden();
+
+        $this->post(route('meal-plans.manual-store'))
+            ->assertForbidden();
+    }
 }
