@@ -157,7 +157,7 @@
                 <label for="manual-report-date">Ngày<input id="manual-report-date" type="date" name="report_date" value="{{ old('report_date', $date) }}" required></label>
                 <label for="manual-room">Số phòng<input id="manual-room" type="text" name="room" value="{{ old('room') }}" maxlength="20" required></label>
                 <label for="manual-guest-name">Họ tên<input id="manual-guest-name" type="text" name="guest_name" value="{{ old('guest_name') }}" maxlength="255" required></label>
-                <label for="manual-nationality">Quốc tịch<input id="manual-nationality" type="text" name="nationality" value="{{ old('nationality') }}" maxlength="255" required></label>
+                <label for="manual-nationality">Quốc tịch<select id="manual-nationality" name="nationality" required><option value="" disabled @selected(old('nationality') === null)>Chọn quốc tịch</option>@foreach($manualNationalities as $nationality)<option value="{{ $nationality }}" @selected(old('nationality') === $nationality)>{{ $nationality }}</option>@endforeach</select></label>
                 <label for="manual-is-child">Đối tượng<select id="manual-is-child" name="is_child"><option value="0" @selected(old('is_child', '0') === '0')>Người lớn</option><option value="1" @selected(old('is_child') === '1')>Trẻ em</option></select></label>
                 <div class="manual-dialog-actions"><button type="button" class="manual-dialog-cancel" id="cancel-manual-entry">Hủy</button><button type="submit">Thêm khách</button></div>
             </form>

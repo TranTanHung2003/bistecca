@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MealPlanGuest;
 use App\Services\MealPlanPdfImporter;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class MealPlanController extends Controller
@@ -15,7 +16,9 @@ class MealPlanController extends Controller
         $guests = MealPlanGuest::whereDate('report_date', $date)->orderBy('room')->orderBy('id')->get();
         $canCheckIn = $this->isWithinCheckInHours();
 
-        return view('meal-plans.index', compact('date', 'guests', 'canCheckIn'));
+        $manualNationalities = MealPlanGuest::MANUAL_NATIONALITIES;
+
+        return view('meal-plans.index', compact('date', 'guests', 'canCheckIn', 'manualNationalities'));
     }
 
     public function store(Request $request, MealPlanPdfImporter $importer)
@@ -42,7 +45,7 @@ class MealPlanController extends Controller
             'report_date' => ['required', 'date'],
             'room' => ['required', 'string', 'max:20'],
             'guest_name' => ['required', 'string', 'max:255'],
-            'nationality' => ['required', 'string', 'max:255'],
+            'nationality' => ['required', 'string', Rule::in(MealPlanGuest::MANUAL_NATIONALITIES)],
             'is_child' => ['sometimes', 'boolean'],
         ]);
 

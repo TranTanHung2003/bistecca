@@ -76,7 +76,7 @@ class MealPlanCheckInTest extends TestCase
             'report_date' => '2026-10-20',
             'room' => '508',
             'guest_name' => 'Nguyen Van An',
-            'nationality' => 'Vietnamese',
+            'nationality' => 'VIET NAM',
             'is_child' => '0',
         ]);
 
@@ -86,7 +86,7 @@ class MealPlanCheckInTest extends TestCase
         $this->assertDatabaseHas('meal_plan_guests', [
             'room' => '508',
             'guest_name' => 'Nguyen Van An',
-            'nationality' => 'Vietnamese',
+            'nationality' => 'VIET NAM',
             'room_type' => 'Manual',
             'meal_plan' => 'Breakfast Include',
             'is_child' => 0,
@@ -105,7 +105,7 @@ class MealPlanCheckInTest extends TestCase
             ->assertOk()
             ->assertSee('Nguyen Van An')
             ->assertSee('508')
-            ->assertSee('Vietnamese');
+            ->assertSee('VIET NAM');
     }
 
     public function test_manual_guest_can_be_marked_as_a_child(): void
@@ -115,13 +115,47 @@ class MealPlanCheckInTest extends TestCase
                 'report_date' => '2026-10-20',
                 'room' => '512',
                 'guest_name' => 'Child Guest',
-                'nationality' => 'Vietnamese',
+                'nationality' => 'VIET NAM',
                 'is_child' => '1',
             ])
             ->assertRedirect(route('meal-plans.index', ['date' => '2026-10-20']));
 
         $guest = MealPlanGuest::where('room', '512')->firstOrFail();
         $this->assertTrue($guest->is_child);
+    }
+
+    public function test_manual_guest_nationality_must_be_selected_from_the_list(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fo']))
+            ->post(route('meal-plans.manual-store'), [
+                'report_date' => '2026-10-20',
+                'room' => '513',
+                'guest_name' => 'Guest With Invalid Nationality',
+                'nationality' => 'NOT A COUNTRY',
+            ])
+            ->assertSessionHasErrors('nationality');
+
+        $this->assertDatabaseMissing('meal_plan_guests', [
+            'room' => '513',
+            'guest_name' => 'Guest With Invalid Nationality',
+        ]);
+    }
+
+    public function test_manual_guest_form_shows_the_nationality_options(): void
+    {
+        $nationalities = MealPlanGuest::MANUAL_NATIONALITIES;
+        $sortedNationalities = $nationalities;
+        sort($sortedNationalities, SORT_STRING);
+
+        $this->assertSame($sortedNationalities, $nationalities);
+
+        $this->actingAs(User::factory()->create(['role' => 'fo']))
+            ->get(route('meal-plans.index'))
+            ->assertOk()
+            ->assertSee('id="manual-nationality"', false)
+            ->assertSee('SRI_LANKA')
+            ->assertSee('UNITED KINGDOM BRITISH DEPEND')
+            ->assertSee('MYANMAR/BURMA');
     }
 
     public function test_manual_guest_can_be_added_when_optional_headcount_columns_are_not_migrated(): void
@@ -135,7 +169,7 @@ class MealPlanCheckInTest extends TestCase
                 'report_date' => '2026-10-20',
                 'room' => '511',
                 'guest_name' => 'Manual Guest',
-                'nationality' => 'Vietnamese',
+                'nationality' => 'VIET NAM',
             ])
             ->assertRedirect(route('meal-plans.index', ['date' => '2026-10-20']))
             ->assertSessionHas('success');
@@ -162,7 +196,7 @@ class MealPlanCheckInTest extends TestCase
                 'report_date' => '2026-10-20',
                 'room' => '509',
                 'guest_name' => 'IT Guest',
-                'nationality' => 'Vietnamese',
+                'nationality' => 'VIET NAM',
             ])
             ->assertForbidden();
 
