@@ -424,6 +424,39 @@ XML;
             ->assertDontSee('data-birthday="true" data-guest-row="2"', false);
     }
 
+    public function test_room_header_shows_arrival_and_departure_dates(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fb']));
+
+        MealPlanGuest::create([
+            'report_date' => '2026-10-28',
+            'room' => '202',
+            'room_type' => 'SDD',
+            'guest_name' => 'Room Guest',
+            'nationality' => 'Ukraine',
+            'arrival' => '2026-10-26',
+            'departure' => '2026-10-28',
+            'meal_plan' => 'No Breakfast',
+        ]);
+        MealPlanGuest::create([
+            'report_date' => '2026-10-28',
+            'room' => '203',
+            'room_type' => 'Manual',
+            'guest_name' => 'Manual Guest',
+            'nationality' => 'VIET NAM',
+            'arrival' => '2026-10-28',
+            'departure' => '2026-10-28',
+            'meal_plan' => 'Breakfast Include',
+        ]);
+
+        $this->get(route('meal-plans.index', ['date' => '2026-10-28']))
+            ->assertOk()
+            ->assertSee('26/10/2026 - 28/10/2026')
+            ->assertDontSee('SDD (26/10/2026 - 28/10/2026)')
+            ->assertSee('Manual Guest')
+            ->assertDontSee('28/10/2026 - 28/10/2026');
+    }
+
     public function test_dashboard_shows_total_no_breakfast_pax_child_and_check_in_counts_in_order(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'fb']));
