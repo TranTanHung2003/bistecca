@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\MealPlanGuest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -137,6 +138,7 @@ class MealPlanCheckInTest extends TestCase
     public function test_staff_can_manually_add_a_late_buffet_guest(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'fo']));
+        $this->createMealPlanGuestForDate('2026-10-20');
 
         $response = $this->post(route('meal-plans.manual-store'), [
             'report_date' => '2026-10-20',
@@ -176,6 +178,8 @@ class MealPlanCheckInTest extends TestCase
 
     public function test_manual_guest_can_be_marked_as_a_child(): void
     {
+        $this->createMealPlanGuestForDate('2026-10-20');
+
         $this->actingAs(User::factory()->create(['role' => 'fo']))
             ->post(route('meal-plans.manual-store'), [
                 'report_date' => '2026-10-20',
@@ -188,6 +192,62 @@ class MealPlanCheckInTest extends TestCase
 
         $guest = MealPlanGuest::where('room', '512')->firstOrFail();
         $this->assertTrue($guest->is_child);
+    }
+
+    public function test_manual_guest_cannot_be_added_to_a_date_without_existing_data(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fo']))
+            ->post(route('meal-plans.manual-store'), [
+                'report_date' => '2026-10-20',
+                'room' => '514',
+                'guest_name' => 'Guest Without Report',
+                'nationality' => 'VIET NAM',
+            ])
+            ->assertSessionHasErrors(['report_date' => 'Ngày này chưa có dữ liệu, không được thêm.']);
+
+        $this->get(route('meal-plans.index'))
+            ->assertOk()
+            ->assertSee('window.alert(', false)
+            ->assertSee('Ngày này chưa có dữ liệu, không được thêm.');
+
+        $this->assertDatabaseMissing('meal_plan_guests', [
+            'room' => '514',
+            'guest_name' => 'Guest Without Report',
+        ]);
+    }
+
+    public function test_uploading_xml_for_a_date_with_existing_data_shows_duplicate_warning(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'fo']));
+
+        MealPlanGuest::create([
+            'report_date' => '2026-10-24',
+            'room' => '101',
+            'room_type' => 'STD',
+            'guest_name' => 'Existing Guest',
+            'arrival' => '2026-10-23',
+            'departure' => '2026-10-25',
+            'meal_plan' => 'Breakfast Include',
+            'source_line' => 'XML: 101 - Existing Guest',
+        ]);
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<FormattedReport xmlns="urn:crystal-reports:schemas">
+    <FormattedReportObject><TextValue>MEAL PLAN reports ON 24/10/2026</TextValue></FormattedReportObject>
+</FormattedReport>
+XML;
+
+        $this->post(route('meal-plans.store'), [
+            'report' => UploadedFile::fake()->createWithContent('meal-plan.xml', $xml),
+        ])
+            ->assertSessionHasErrors(['report' => 'Bạn đã upload file của ngày 2026-10-24 rồi.']);
+
+        $this->assertDatabaseHas('meal_plan_guests', [
+            'room' => '101',
+            'guest_name' => 'Existing Guest',
+        ]);
+        $this->assertDatabaseCount('meal_plan_guests', 1);
     }
 
     public function test_manual_guest_nationality_must_be_selected_from_the_list(): void
@@ -229,6 +289,7 @@ class MealPlanCheckInTest extends TestCase
         Schema::table('meal_plan_guests', function ($table): void {
             $table->dropColumn(['adult_count', 'child_count']);
         });
+        $this->createMealPlanGuestForDate('2026-10-20');
 
         $this->actingAs(User::factory()->create(['role' => 'fo']))
             ->post(route('meal-plans.manual-store'), [
@@ -427,5 +488,19 @@ class MealPlanCheckInTest extends TestCase
             ->assertSee('data-stat="child">1', false)
             ->assertSee('id="checked-in-count">1', false)
             ->assertSee('id="remaining-count">2', false);
+    }
+
+    private function createMealPlanGuestForDate(string $date): void
+    {
+        MealPlanGuest::create([
+            'report_date' => $date,
+            'room' => '100',
+            'room_type' => 'STD',
+            'guest_name' => 'Existing Report Guest',
+            'arrival' => $date,
+            'departure' => $date,
+            'meal_plan' => 'Breakfast Include',
+            'source_line' => 'XML: 100 - Existing Report Guest',
+        ]);
     }
 }

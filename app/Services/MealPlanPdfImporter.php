@@ -65,6 +65,12 @@ class MealPlanPdfImporter
             throw new RuntimeException('Không tìm thấy ngày báo cáo trong file XML.');
         }
 
+        $reportDate = Carbon::createFromFormat('d/m/Y', $dateMatch[1])->toDateString();
+
+        if (DB::table('meal_plan_guests')->whereDate('report_date', $reportDate)->exists()) {
+            throw new RuntimeException("Bạn đã upload file của ngày {$reportDate} rồi.");
+        }
+
         $rows = [];
         foreach ($xml->xpath('//*[local-name()="FormattedAreaPair"][@Level="1"][@Type="Details"]') ?: [] as $detail) {
             $values = [];
@@ -111,7 +117,7 @@ class MealPlanPdfImporter
             throw new RuntimeException('Không tìm thấy bản ghi khách trong file XML.');
         }
 
-        return $this->storeRows(Carbon::createFromFormat('d/m/Y', $dateMatch[1])->toDateString(), $rows);
+        return $this->storeRows($reportDate, $rows);
     }
 
     private function xmlDate(string $value): string

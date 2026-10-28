@@ -50,6 +50,12 @@ class MealPlanController extends Controller
             'is_child' => ['sometimes', 'boolean'],
         ]);
 
+        if (! MealPlanGuest::whereDate('report_date', $data['report_date'])->exists()) {
+            throw ValidationException::withMessages([
+                'report_date' => 'Ngày này chưa có dữ liệu, không được thêm.',
+            ]);
+        }
+
         MealPlanGuest::create([
             ...$data,
             'room_type' => 'Manual',

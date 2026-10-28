@@ -244,6 +244,9 @@
         @if($errors->hasAny(['report_date', 'room', 'guest_name', 'nationality']))
         manualEntryDialog.showModal();
         @endif
+        @if($errors->first('report_date') === 'Ngày này chưa có dữ liệu, không được thêm.')
+        window.alert(@json($errors->first('report_date')));
+        @endif
     }
 
     const pdfInput = document.getElementById('report');
